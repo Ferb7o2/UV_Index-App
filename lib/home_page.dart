@@ -16,7 +16,7 @@ class HomePageScreen extends StatelessWidget {
               1
             ],
                 colors: [
-              Color(0xffF75900), // Orange
+              Color(0xffF75900), //Hello // Orange
               Color(0xffFFE800) //Yellow
             ])),
         child: Scaffold(
