@@ -1,8 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart';
+import 'package:uv_index/Utilities/models.dart';
 import 'chart.dart';
+import 'Data/data_service.dart';
 
-class HomePageScreen extends StatelessWidget {
-  const HomePageScreen({Key? key}) : super(key: key);
+class HomePageScreen extends StatefulWidget {
+  //const HomePageScreen({Key? key}) : super(key: key);
+
+  @override
+  _HomePageScreenState createState() => _HomePageScreenState();
+}
+
+class _HomePageScreenState extends State<HomePageScreen> {
+  final _dataService = DataService();
+
+  late WeatherResponse _response;
 
   @override
   Widget build(BuildContext context) {
@@ -27,7 +39,9 @@ class HomePageScreen extends StatelessWidget {
             leading: IconButton(
               icon: Icon(Icons.menu),
               iconSize: 38,
-              onPressed: () {},
+              onPressed: () {
+                _getCityName();
+              },
             ),
             title: Text(
               "UV Index",
@@ -69,6 +83,7 @@ class HomePageScreen extends StatelessWidget {
                       ]),
                 ),
                 Padding(padding: EdgeInsets.only(bottom: 8)),
+
                 Text(
                   "Partly cloudy",
                   style: TextStyle(
@@ -119,5 +134,11 @@ class HomePageScreen extends StatelessWidget {
             ),
           ),
         ));
+  }
+
+  void _getCityName() async {
+    final response = await _dataService.getWeather("McAllen");
+
+    setState(() => _response = response);
   }
 }
