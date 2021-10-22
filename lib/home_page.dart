@@ -1,8 +1,141 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'chart.dart';
+import 'package:http/http.dart' as http;
+import 'package:location/location.dart';
 
-class HomePageScreen extends StatelessWidget {
-  const HomePageScreen({Key? key}) : super(key: key);
+class HomePageScreen extends StatefulWidget {
+  @override
+  _HomePageScreenState createState() => _HomePageScreenState();
+}
+
+class _HomePageScreenState extends State<HomePageScreen> {
+  getUserData() async {
+    var latitude = _locationData.latitude.toString();
+    var longitude = _locationData.longitude.toString();
+
+    var responseCity = await http.get(
+        Uri.https('api.weather.gov', 'points/' + latitude + "," + longitude));
+
+    var jsonDataCity = jsonDecode(responseCity.body);
+
+    var city =
+        jsonDataCity['properties']['relativeLocation']['properties']['city'];
+    var state =
+        jsonDataCity['properties']['relativeLocation']['properties']['state'];
+
+    var response = await http.get(Uri.https(
+        'enviro.epa.gov',
+        '/enviro/efservice/getEnvirofactsUVHOURLY/CITY/' +
+            city +
+            '/STATE/' +
+            state +
+            '/JSON'));
+
+    var jsonData = jsonDecode(response.body);
+
+    List<String> uvMap = [];
+
+    //#0 index starts at 6am and ends at 2am next day
+    for (var i = 12; i < jsonData.length + 13; i++) {
+      if ((i - 12) <= 5) {
+        uvMap.add("0");
+      } else
+        uvMap.add(jsonData[i - 18]['UV_VALUE'].toString());
+    }
+/*
+    for (int i = 0; i < uvMap.length; i++) {
+      print(i);
+      print(uvMap[i]);
+      print("-------------");
+    }*/
+    /*
+    for (int i = 0; i < uvMap.length; i++) {
+      print(uvMap[i]);
+    }*/
+
+    var time = jsonData[0]['DATE_TIME'].substring(12, 17);
+
+    var uvIndex = jsonData[0]['UV_VALUE'].toString();
+
+    // GET FORECAST TEXT
+
+    var forecastURL = jsonDataCity['properties']['forecastHourly'];
+
+    var responseForecast = await http.get(Uri.https(
+        forecastURL.substring(8, 23),
+        forecastURL.substring(24, forecastURL.length)));
+
+    var jsonDataForecast = jsonDecode(responseForecast.body);
+
+    var forecast =
+        jsonDataForecast['properties']['periods'][0]['shortForecast'];
+
+    print("ZIP -> " + time + ": " + uvIndex);
+    print(longitude + "," + latitude);
+
+    print(city + ", " + state);
+
+    String now = new DateTime.now().toString().substring(11, 13);
+
+    int hour = int.parse(now);
+    //print(hour);
+
+    //print(hour.runtimeType);
+
+    // print(new DateTime.now().toString().substring(11, 13));
+
+    setState(() {
+      localCity = city;
+      localState = state;
+      localForecast = forecast;
+      localUvMap = uvMap;
+      localHour = hour;
+    });
+  }
+
+  var localCity = "";
+  var localState = "";
+  var localForecast = "Loading...";
+  var localUvMap = List<String>.filled(24, "0");
+  var localHour = 5;
+
+  Location location = new Location();
+  bool _serviceEnabled = false;
+
+  late PermissionStatus _permissionGranted;
+  late LocationData _locationData;
+  bool _isListenLocation = false, _isGetLocation = false;
+
+  void loadData() async {
+    _serviceEnabled = await location.serviceEnabled();
+    if (!_serviceEnabled) {
+      _serviceEnabled = await location.requestService();
+      if (_serviceEnabled) return;
+    }
+
+    _permissionGranted = await location.hasPermission();
+    if (_permissionGranted == PermissionStatus.denied) {
+      _permissionGranted = await location.requestPermission();
+
+      if (_permissionGranted != PermissionStatus.granted) return;
+    }
+
+    _locationData = await location.getLocation();
+
+    setState(() {
+      _isGetLocation = true;
+    });
+
+    getUserData();
+  }
+
+  //on load trigger
+  void initState() {
+    super.initState();
+    loadData();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -56,7 +189,7 @@ class HomePageScreen extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: <Widget>[
                 Text(
-                  'McAllen',
+                  localCity + ", " + localState,
                   style: TextStyle(
                       fontSize: 54,
                       fontFamily: 'Roboto',
@@ -70,7 +203,7 @@ class HomePageScreen extends StatelessWidget {
                 ),
                 Padding(padding: EdgeInsets.only(bottom: 8)),
                 Text(
-                  "Partly cloudy",
+                  localForecast,
                   style: TextStyle(
                       fontSize: 18,
                       fontFamily: 'Roboto',
@@ -84,7 +217,7 @@ class HomePageScreen extends StatelessWidget {
                 ),
                 Padding(padding: EdgeInsets.only(bottom: 8)),
                 Text(
-                  "7",
+                  localUvMap[localHour],
                   style: TextStyle(
                       fontSize: 200,
                       fontFamily: 'Roboto',
