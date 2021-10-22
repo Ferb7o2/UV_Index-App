@@ -38,22 +38,12 @@ class _HomePageScreenState extends State<HomePageScreen> {
     List<String> uvMap = [];
 
     //#0 index starts at 6am and ends at 2am next day
-    for (var i = 12; i < jsonData.length + 13; i++) {
+    for (var i = 12; i < jsonData.length + 15; i++) {
       if ((i - 12) <= 5) {
         uvMap.add("0");
       } else
         uvMap.add(jsonData[i - 18]['UV_VALUE'].toString());
     }
-/*
-    for (int i = 0; i < uvMap.length; i++) {
-      print(i);
-      print(uvMap[i]);
-      print("-------------");
-    }*/
-    /*
-    for (int i = 0; i < uvMap.length; i++) {
-      print(uvMap[i]);
-    }*/
 
     var time = jsonData[0]['DATE_TIME'].substring(12, 17);
 
